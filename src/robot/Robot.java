@@ -4,6 +4,8 @@ import java.net.*;
 import java.io.*;
 
 /**
+ * TODO: nemá potvrzovací číslo v intervalu <seq - velikost okénka, seq> kde seq
+ * je sekvenční číslo příjemce
  *
  * @author Adam Plansky if you have some question please contact me:
  * plansada@fit.cvut.cz
@@ -30,6 +32,7 @@ class Client {
 
     boolean end = false;
     int counter = 0;
+    boolean correctPacket = true;
     DatagramSocket socket;
     DatagramPacket packet;
     InetAddress address;
@@ -37,6 +40,8 @@ class Client {
     byte[] messageSend, messageReceive;
     Send s;
     Receive r;
+    Window w;
+    Data d;
 
     public Client(String address, int port) throws UnknownHostException, SocketException {
         this.address = InetAddress.getByName(address);
@@ -45,6 +50,8 @@ class Client {
         socket.setSoTimeout(100);
         messageSend = new byte[264]; //264 = 4+2+2+1+255
         messageReceive = new byte[264]; //264 = 4+2+2+1+255
+        w = new Window();
+        d = new Data();
     }
 
     public void sendFirmware() {
@@ -55,30 +62,41 @@ class Client {
         r = new Receive();
         connectionPacket();
         receive(); //prijme prvni packet s datama
-        r.setMessage(messageReceive,packetLen);
+        r.setMessage(messageReceive, packetLen);
+        correctPacket = d.faultyPacket(s, r);
+
         s.print();
         r.print();
-//        while (end == false) {
-//            //prijmu packet
-//            receive();
-//            r.setMessage(messageReceive,packetLen);
-//
-//            s.print();
-//            r.print();
-//
-//            //odeslu packet
-//            messageSend = s.getMessage();
-//            send(messageSend);
-//
-//        }
+        while (end == false && correctPacket == true) {
+            messageSend = s.getMessage();
+            send(messageSend);
+
+            //prijmu packet
+            receive();
+            r.setMessage(messageReceive, packetLen);
+
+            s.print();
+            r.print();
+
+            //odeslu packet
+            correctPacket = d.faultyPacket(s, r);
+
+        }
+        if (end == true) {
+            //send packet with the FIN 
+            System.out.println("PACKET WITH FIN");
+        } else if (correctPacket == false) {
+            //send RST packet
+            System.out.println("FALSE PACKET");
+        }
     }
 
-    public void connectionPacket() throws IOException {
+    private void connectionPacket() throws IOException {
         messageSend = s.getMessage();
         send(messageSend);
         receive();
-        r.setMessage(messageReceive,packetLen);
-        
+        r.setMessage(messageReceive, packetLen);
+
         s.print();
         r.print();
         System.out.println("Connection established, id conn = " + Integer.toHexString(r.idCon));
@@ -93,16 +111,17 @@ class Client {
         packet = new DatagramPacket(messageReceive, messageReceive.length);
         try {
             socket.receive(packet);
-            
+            packetLen = packet.getLength();
         } catch (SocketTimeoutException e) {
             if (counter++ == 20) {
                 end = true;
+            } else {
+                send(messageSend);
+                receive();
             }
-            send(messageSend);
-            receive();
         } finally {
             counter = 0;
-            packetLen = packet.getLength();
+            
         }
     }
 }

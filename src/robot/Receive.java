@@ -51,9 +51,12 @@ public class Receive {
 
     public void print() {
         System.out.print((String.format("%8s", Integer.toHexString(idCon))).replace(' ', '0') + " RECV seq=" + seq + " ack=" + ack + " flag=" + flag + " data(255): ");
+        if(flag == SYN){
+            System.out.println("");
+        }
         StringBuilder sb = new StringBuilder();
-        for (byte b : data) {
-            sb.append(String.format("%02X ", b));
+        for (int i = 0; i < dataLen; i++) {
+            sb.append(String.format("%02X ", data[i]));
         }
         System.out.println(sb.toString());
 

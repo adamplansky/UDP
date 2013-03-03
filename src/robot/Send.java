@@ -1,6 +1,9 @@
 package robot;
 
 import java.io.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 /**
  *
@@ -12,52 +15,110 @@ public class Send {
     short seq, ack;
     byte flag;
     byte[] data;
+    int dataLen;
     final byte SYN = 4;
     final byte FIN = 2;
     final byte RST = 1;
-    final int DOWNLOAD = 0x01;
-    final int UPLOAD = 0x02;
+    private byte mode = 0;
     byte[] message;
     private ByteArrayOutputStream baos;
     private DataOutputStream daos;
+    private DatagramPacket packet;
+    private InetAddress address;
+    private int port;
+    private DatagramSocket socket;
+    private boolean connNumber;
+    private Receive r;
+    public Tmr t;
+    
+    ////TIME
 
-    public Send(String mode) {
+    public Send(DatagramSocket socket, InetAddress address, int port) throws FileNotFoundException{
+        this.socket = socket;
+        this.address = address;
+        this.port = port;
         idCon = seq = ack = 0;
         flag = SYN;
         data = new byte[1];
-        if (mode.equals("DOWN")) {
-            data[0] = DOWNLOAD;
-        } else if (mode.equals("UPLOAD")) {
-            data[0] = UPLOAD;
-        }
+        connNumber = false;
+        r = new Receive(socket, this);
+        t = new Tmr();
+        
     }
 
-    public void print() {
-        System.out.print((String.format("%8s", Integer.toHexString(idCon))).replace(' ', '0') + " SEND seq=" + seq + " ack=" + ack + " flag=" + flag + " data(255): ");
-        StringBuilder sb = new StringBuilder();
-        for (byte b : data) {
-            sb.append(String.format("%02X ", b));
+    public void screenshot() throws IOException {
+        setMode(1);
+        while (idCon == 0) {
+            send();
+            r.receive();
+            //if(t.getElapsedTime1() > 2000)break;//RST;
+            if(t.getElapsedTime1() > 2000)break;
         }
-        System.out.println(sb.toString());
-
+        while (flag == 0) {
+            r.receive();
+            send();
+        }
+        r.w.fos.close();
+        System.out.println("ENDE1");
     }
 
-    void convertToPacket() throws IOException {
+    public void setHead(int idCon, short seq, short ack, byte flag) {
+        this.idCon = idCon;
+        this.seq = seq;
+        this.ack = ack;
+        this.flag = flag;
+    }
+
+    public void send() throws IOException {
+        buildMessage();
+        packet = new DatagramPacket(message, message.length, address, port);
+        socket.send(packet);
+        dataLen = packet.getLength() - 9;
+        print();
+    }
+
+    private void buildMessage() throws IOException {
         baos = new ByteArrayOutputStream();
         daos = new DataOutputStream(baos);
         daos.writeInt(idCon);
         daos.writeShort(seq);
         daos.writeShort(ack);
         daos.writeByte(flag);
-        daos.write(data, 0, data.length);
+        //download screenshort
+        if (mode == 1) {
+            if (flag == SYN) {
+                daos.write(data, 0, data.length);
+            }
+        } else if (mode == 2) {
+        }
         message = baos.toByteArray();
         daos.close();
         baos.close();
     }
 
-    public byte[] getMessage() throws IOException {
-        convertToPacket();
-        return message;
+    public void setMode(int mode) {
+        this.mode = (byte) mode;
+        data[0] = this.mode;
+    }
+
+    public void getMode() {
+        System.out.println(String.format("%02X ", mode));
+    }
+
+    public void print() {
+        System.out.print(t.getElapsedTime1() + " " + (String.format("%8s", Integer.toHexString(idCon))).replace(' ', '0') + " SEND seq=" + seq + " ack=" + ack + " flag=" + flag + " data(" +dataLen + "): ");
+        StringBuilder sb = new StringBuilder();
+        if (mode == 1) {
+            if (flag == SYN) {
+                for (byte b : data) {
+                    sb.append(String.format("%02X ", b));
+                }
+            } else {
+                System.out.println("--");
+            }
+        }
+
+        System.out.println(sb.toString());
     }
 
     public void getHead() {

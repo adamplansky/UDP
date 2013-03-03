@@ -1,7 +1,16 @@
 package robot;
 
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.net.*;
 import java.io.*;
+import java.util.Iterator;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 /**
  * TODO: nemá potvrzovací číslo v intervalu <seq - velikost okénka, seq> kde seq
@@ -16,13 +25,50 @@ import java.io.*;
 public class Robot {
 
     public static void main(String[] args) {
+
         try {
-            Client c = new Client("192.168.10.211", 4000);
+            Client c;
+            //Client c = new Client("192.168.10.211", 4000);
+                          //147.32.232.173 = baryk.fit.cvut.cz 3261
+                          //192.168.10.211 = localhost 4000
+            System.out.println("---------------------------------------------------------------");
+            c = new Client("localhost", 4000);
             c.receiveScreenshot();
-            //c.sendFirmware();
+            System.out.println("---------------------------------------------------------------");
+
+//            File f = new File("/home/impy/Projects/UDP_robot/UDP/build/classes/robot/image.jpeg");
+//            System.out.println(f.exists());
+//            FileInputStream fis = new FileInputStream(f);
+//
+//            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//            FileOutputStream fos = new FileOutputStream("foto.png");
+//            byte[] buf = new byte[1024];
+//            try {
+//                for (int readNum; (readNum = fis.read(buf)) != -1;) {
+//                    fos.write(buf,0,readNum);
+//                    bos.write(buf, 0, readNum);
+//                    System.out.println("read " + readNum + " bytes,");
+//                }
+//            } catch (IOException ex) {
+//                System.out.println(ex);
+//            }
+//            byte[] bytes = bos.toByteArray();
+//            
+//            
+//            fos.close();
+            
         } catch (Exception e) {
             System.out.println(e);
         }
+
+
+//        short i = 32767;
+//        System.out.println(i);
+//        System.out.println(Integer.toBinaryString(i));
+//        System.out.println(i+=1);
+//        System.out.println(Integer.toBinaryString(i).replaceFirst("1111111111111111", ""));
+//        int a = 32768;
+//        System.out.println(Integer.toBinaryString(a));
     }
 }
 
@@ -30,98 +76,40 @@ class Client {
     //identifikátor 'spojení'	sekvenční  číslo	číslo potvrzení     příznak         data
     //  4B                                  2B                    2B              1B            0-255B
 
-    boolean end = false;
-    int counter = 0;
-    boolean correctPacket = true;
     DatagramSocket socket;
     DatagramPacket packet;
-    InetAddress address;
-    int port, packetLen;
-    byte[] messageSend, messageReceive;
     Send s;
-    Receive r;
-    Window w;
-    Data d;
 
-    public Client(String address, int port) throws UnknownHostException, SocketException {
-        this.address = InetAddress.getByName(address);
-        this.port = port;
+    public Client(String address, int port) throws UnknownHostException, SocketException, FileNotFoundException{
         socket = new DatagramSocket();
         socket.setSoTimeout(100);
-        messageSend = new byte[264]; //264 = 4+2+2+1+255
-        messageReceive = new byte[264]; //264 = 4+2+2+1+255
-        w = new Window();
-        d = new Data();
+        s = new Send(socket, InetAddress.getByName(address), port);
+
     }
 
     public void sendFirmware() {
+        s.setMode(2);
     }
 
     public void receiveScreenshot() throws IOException {
-        s = new Send("DOWN");
-        r = new Receive();
-        connectionPacket();
-        receive(); //prijme prvni packet s datama
-        r.setMessage(messageReceive, packetLen);
-        correctPacket = d.faultyPacket(s, r);
-
-        s.print();
-        r.print();
-        while (end == false && correctPacket == true) {
-            messageSend = s.getMessage();
-            send(messageSend);
-
-            //prijmu packet
-            receive();
-            r.setMessage(messageReceive, packetLen);
-
-            s.print();
-            r.print();
-
-            //odeslu packet
-            correctPacket = d.faultyPacket(s, r);
-
-        }
-        if (end == true) {
-            //send packet with the FIN 
-            System.out.println("PACKET WITH FIN");
-        } else if (correctPacket == false) {
-            //send RST packet
-            System.out.println("FALSE PACKET");
-        }
-    }
-
-    private void connectionPacket() throws IOException {
-        messageSend = s.getMessage();
-        send(messageSend);
-        receive();
-        r.setMessage(messageReceive, packetLen);
-
-        s.print();
-        r.print();
-        System.out.println("Connection established, id conn = " + Integer.toHexString(r.idCon));
-    }
-
-    private void send(byte[] msg) throws IOException {
-        packet = new DatagramPacket(msg, msg.length, this.address, this.port);
-        socket.send(packet);
-    }
-
-    private void receive() throws IOException {
-        packet = new DatagramPacket(messageReceive, messageReceive.length);
-        try {
-            socket.receive(packet);
-            packetLen = packet.getLength();
-        } catch (SocketTimeoutException e) {
-            if (counter++ == 20) {
-                end = true;
-            } else {
-                send(messageSend);
-                receive();
-            }
-        } finally {
-            counter = 0;
-            
-        }
+        s.screenshot();
     }
 }
+//    private void receive() throws IOException { 
+//        try {
+//            packet = new DatagramPacket(messageReceive, messageReceive.length);
+//            socket.receive(packet);
+//            packetLen = packet.getLength(); 
+//        } catch (SocketTimeoutException e) {
+//            if (counter++ == 20) {
+//                end = true;
+//            } else {
+//                send(messageSend);
+//                receive();
+//            }
+//        } finally {
+//            counter = 0;
+//
+//        }
+//    }
+//}

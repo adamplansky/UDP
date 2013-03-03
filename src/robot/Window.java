@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 public class Window {
 
-    int top = 0;
+    int top = 7;
     int seqTop = 0;
     final int sw = 255;
     byte[] w;
@@ -25,6 +25,7 @@ public class Window {
     int endSeq = 0;
     FileOutputStream fos;
     private int idx = -1;
+    int i1 = 0, i2 = 0, i3 = 0, i4 = 0;
 
     public Window() throws FileNotFoundException {
         w = new byte[2040];
@@ -36,7 +37,8 @@ public class Window {
 
     //return packet I need
     public void Add(byte[] data, int seqNumber, int dataLen) throws IOException {
-        int idx = getIdx(seqNumber / 255);
+      
+        int idx = getIdx(seqNumber);
         if (s[idx] == seqNumber && seqNumber != 0) {
             return;
         }
@@ -48,30 +50,45 @@ public class Window {
             endDatLen = dataLen;
             endSeq = seqNumber;
         }
-        Print();
+        //Print();
     }
 
     public int next(byte[] data, int seqNumber, int dataLen) throws IOException {
-        System.out.print("seqNumber = " + seqNumber);
+      //  System.out.print("seqNumber = " + seqNumber);
         Add(data, seqNumber, dataLen);
-        int temp, start = 0;
+        int temp, temp2, start = 0;
 
         do {
-            temp = s[seqTop];
-
+            temp = s[seqTop] % 65536;
             toFile();
-            ++seqTop;
+            --seqTop;
             ++start;
-            seqTop %= 8;
-        } while (s[seqTop] > temp && (s[seqTop] - temp) < 5000 && (s[seqTop] - temp) > -5000);
-        System.out.println(" | seqTop= " + seqTop);
-        if (end == true && endSeq == s[getIdx(seqTop - 1)]) {
+            seqTop = getIdx(seqTop);
+            temp2 = (s[seqTop] % 65536);
+          //  System.out.println("temp = " + temp + ", temp2 = " + temp2);
+            //} while (temp2 > temp && ((temp2 - temp) < 5000 && (temp2 - temp) > -5000) );
+        } while ((temp2 > temp && (temp2 - temp) < 2040) || ((temp > temp2) && 65536 - (temp - temp2) < 2040));
+
+        //System.out.println(" | seqTop= " + seqTop);
+        if (end == true && endSeq == s[getIdx(seqTop + 1)]) {
             fos.close();
             return endSeq + endDatLen;
 
         } else {
-            seqNumber %= 65536;
-            return seqNumber + 255 * start;
+          //  System.out.println("ASD: "+i1 + "," + i2 + "," + i3 + "," + i4 + ",");
+            if (temp - temp2 > 30000) {
+                i1++;
+                return temp2 + 255;
+            } else if (temp > temp2) {
+                i2++;
+                return temp + 255;
+            } else if (temp2 - temp > 30000) {
+                i3++;
+                return temp + 255;
+            } else {
+                i4++;
+                return temp2 + 255;
+            }
         }
     }
 
@@ -82,7 +99,7 @@ public class Window {
             fos.write(w, seqTop * 255, 255);
         }
 
-        System.out.println("################## : " + s[seqTop]);
+      //  System.out.println("################## : " + s[seqTop]);
     }
 
     public void Print() {
@@ -95,7 +112,7 @@ public class Window {
 
     public int getIdx(int number) {
         if (number < 1) {
-            int a = (number) % -8;
+            int a = (number) % 8;
             while (a < 0) {
                 a += 8;
             }

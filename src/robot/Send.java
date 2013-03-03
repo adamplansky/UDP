@@ -76,7 +76,7 @@ public class Send {
         packet = new DatagramPacket(message, message.length, address, port);
         socket.send(packet);
         dataLen = packet.getLength() - 9;
-        print();
+       print();
     }
 
     private void buildMessage() throws IOException {

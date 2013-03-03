@@ -51,23 +51,17 @@ public class Receive {
     }
 
     public void receive() throws IOException {
-        if(seq > 65000){
-            System.out.println("");
-        }
+   
         try {
             packet = new DatagramPacket(message, message.length);
             socket.receive(packet);
 
             dataLen = packet.getLength() - 9; //buffer for data - head of packet
-            if (dataLen != 255 && dataLen > 1) {
-                System.out.println("");
-            }
+  
 
             convertFromPacket();
-            print();
-            if (-32386 == seq) {
-                System.out.println("");
-            }
+           print();
+     
             if (s.idCon == idCon) {
                 //if it is correct packet
                 if (s.flag == 0 && flag == 0) {
@@ -76,7 +70,7 @@ public class Receive {
 
 
                 } else if (flag == FIN && dataLen > 0) {
-                    System.out.println("RST FLAG");
+                    //System.out.println("RST FLAG");
                 } else if (flag == FIN) {
                     System.out.println("ENDE ");
                     s.setHead(idCon, (short) 0, (short) (seq1), FIN);
@@ -84,12 +78,12 @@ public class Receive {
             } else {
 
                 if (flag == SYN && s.flag == SYN && s.getIdCon() == 0 && dataLen == 1 && (data[0] == 1)) {
-                    System.out.println("nastavuju ID");
+                    //System.out.println("nastavuju ID");
                     setSendPacket();
                 } else if (s.getFlag() == SYN && flag == 0) {
-                    System.out.println("packet zahazuju");
+                    //System.out.println("packet zahazuju");
                 } else {
-                    System.out.println("RST IDCON MISSING");
+                    //System.out.println("RST IDCON MISSING");
                 }
             }
             if (flag > 4 || s.flag == 3);//RST
@@ -106,10 +100,11 @@ public class Receive {
             }
 
         }
+        counter = 0;
     }
 
     void doAction() throws IOException {
-
+        
         if (seq == s.ack) {
             seq1 = w.next(data, seq, dataLen);
             if(seq1 >= 65536){
@@ -117,10 +112,14 @@ public class Receive {
                 seq%=65536;
             }
             s.setHead(idCon, (short) 0, (short) (seq1), flag);
-        } else if (seq > s.ack && (seq - s.ack) < 10000)//i needed remember this packet
+        } else if (seq - s.ack < 2040 )//i needed remember this packet
         {
-            System.out.println("tento packet si budu pamatovat");
-            System.out.println("dataLen = " + dataLen);
+//            System.out.println("tento packet si budu pamatovat");
+//            System.out.println("dataLen = " + dataLen);
+            w.Add(data, seq, dataLen);
+        } else if((65536-(seq+s.ack)) < 2040 && (65536-(seq+s.ack)) > -2040 && s.ack > seq ){
+//            System.out.println("tento packet si budu pamatovat PRETEJKAM");
+//            System.out.println("dataLen = " + dataLen);
             w.Add(data, seq, dataLen);
         }
 

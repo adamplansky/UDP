@@ -24,10 +24,10 @@ public class Robot {
             //192.168.10.211 = localhost 4000
             System.out.println("---------------------------------------------------------------");
             c = new Client("localhost", 4000);
-            for(int i = 0 ; i < 270 ; i++){
-                System.out.println((i*255%65536 )+ " "+((i*255 % 8)));
-            }
-           // c.receiveScreenshot();
+//            for(int i = 0 ; i < 270 ; i++){
+//                System.out.println((i*255%65536 )+ " "+((i*255 % 8)));
+//            }
+            c.receiveScreenshot();
 //            short b2 = -1; // 0xFF
 //            int i2 = b2 & 0xFFFF; // 0x000000FF
 //            System.out.println("int = " + i2);

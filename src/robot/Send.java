@@ -12,7 +12,7 @@ import java.net.InetAddress;
 public class Send {
 
     int idCon;
-    short seq, ack;
+    int ack, seq;
     byte flag;
     byte[] data;
     int dataLen;
@@ -30,20 +30,20 @@ public class Send {
     private boolean connNumber;
     private Receive r;
     public Tmr t;
-    
-    ////TIME
 
-    public Send(DatagramSocket socket, InetAddress address, int port) throws FileNotFoundException{
+    ////TIME
+    public Send(DatagramSocket socket, InetAddress address, int port) throws FileNotFoundException {
         this.socket = socket;
         this.address = address;
         this.port = port;
-        idCon = seq = ack = 0;
+        idCon = seq = 0;
+        ack = 0;
         flag = SYN;
         data = new byte[1];
         connNumber = false;
         r = new Receive(socket, this);
         t = new Tmr();
-        
+
     }
 
     public void screenshot() throws IOException {
@@ -52,7 +52,9 @@ public class Send {
             send();
             r.receive();
             //if(t.getElapsedTime1() > 2000)break;//RST;
-            if(t.getElapsedTime1() > 2000)break;
+            if (t.getElapsedTime1() > 2000) {
+                break;
+            }
         }
         while (flag == 0) {
             r.receive();
@@ -65,7 +67,7 @@ public class Send {
     public void setHead(int idCon, short seq, short ack, byte flag) {
         this.idCon = idCon;
         this.seq = seq;
-        this.ack = ack;
+        this.ack = (ack & 0xFFFF);
         this.flag = flag;
     }
 
@@ -82,7 +84,7 @@ public class Send {
         daos = new DataOutputStream(baos);
         daos.writeInt(idCon);
         daos.writeShort(seq);
-        daos.writeShort(ack);
+        daos.writeShort((short) ack);
         daos.writeByte(flag);
         //download screenshort
         if (mode == 1) {
@@ -106,7 +108,7 @@ public class Send {
     }
 
     public void print() {
-        System.out.print(t.getElapsedTime1() + " " + (String.format("%8s", Integer.toHexString(idCon))).replace(' ', '0') + " SEND seq=" + seq + " ack=" + ack + " flag=" + flag + " data(" +dataLen + "): ");
+        System.out.print(t.getElapsedTime1() + " " + (String.format("%8s", Integer.toHexString(idCon))).replace(' ', '0') + " SEND seq=" + seq + " ack=" + ack + " flag=" + flag + " data(" + dataLen + "): ");
         StringBuilder sb = new StringBuilder();
         if (mode == 1) {
             if (flag == SYN) {
@@ -128,11 +130,11 @@ public class Send {
         return idCon;
     }
 
-    public short getSeq() {
+    public int getSeq() {
         return seq;
     }
 
-    public short getAck() {
+    public int getAck() {
         return ack;
     }
 

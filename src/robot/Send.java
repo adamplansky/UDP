@@ -16,7 +16,7 @@ public class Send {
     byte flag;
     byte[] data;
     int dataLen;
-    final byte SYN = 4;
+    final byte SYN = 1;
     final byte FIN = 2;
     final byte RST = 1;
     private byte mode = 0;
@@ -61,6 +61,8 @@ public class Send {
             send();
         }
         r.w.fos.close();
+        if(r.w.end == true)
+            System.out.println("Prenaseni probehlo uspesne.");
         System.out.println("ENDE1");
     }
 
@@ -76,7 +78,7 @@ public class Send {
         packet = new DatagramPacket(message, message.length, address, port);
         socket.send(packet);
         dataLen = packet.getLength() - 9;
-       print();
+        print();
     }
 
     private void buildMessage() throws IOException {

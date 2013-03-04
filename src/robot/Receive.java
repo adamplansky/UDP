@@ -19,9 +19,14 @@ public class Receive {
     byte flag;
     byte[] data;
     int dataLen;
-    final byte SYN = 4;
+//    final byte SYN = 4;
+//    final byte FIN = 2;
+//    final byte RST = 1;
+    final byte SYN = 1;
     final byte FIN = 2;
     final byte RST = 1;
+    
+    
     final int DOWNLOAD = 0x01;
     final int UPLOAD = 0x02;
     byte[] message;
@@ -117,7 +122,7 @@ public class Receive {
             System.out.println("tento packet si budu pamatovat");
             System.out.println("dataLen = " + dataLen);
             w.Add(data, seq, dataLen);
-        } else if((65536-(seq+s.ack)) < 2040 && (65536-(seq+s.ack)) > -2040 && s.ack > seq ){
+        } else if(seq < 2040 && (65536-(seq+s.ack)) < 2040 && (65536-(seq+s.ack)) > -2040 && s.ack > seq ){
             System.out.println("tento packet si budu pamatovat PRETEJKAM");
             System.out.println("dataLen = " + dataLen);
             w.Add(data, seq, dataLen);

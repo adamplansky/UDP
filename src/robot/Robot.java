@@ -23,7 +23,9 @@ public class Robot {
             //147.32.232.173 = baryk.fit.cvut.cz 3261
             //192.168.10.211 = localhost 4000
             System.out.println("---------------------------------------------------------------");
-            c = new Client("localhost", 4000);
+           // c = new Client("baryk.fit.cvut.cz", 4000);
+            c = new Client("localhost",4000);
+            //c = new Client("localhost", 4000);
 //            for(int i = 0 ; i < 270 ; i++){
 //                System.out.println((i*255%65536 )+ " "+((i*255 % 8)));
 //            }
@@ -54,6 +56,7 @@ class Client {
     Send s;
 
     public Client(String address, int port) throws UnknownHostException, SocketException, FileNotFoundException {
+        //socket = new DatagramSocket(port,InetAddress.getByName(address));
         socket = new DatagramSocket();
         socket.setSoTimeout(100);
         s = new Send(socket, InetAddress.getByName(address), port);

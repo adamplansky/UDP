@@ -50,11 +50,11 @@ public class Window {
             endDatLen = dataLen;
             endSeq = seqNumber;
         }
-        //Print();
+        Print();
     }
 
     public int next(byte[] data, int seqNumber, int dataLen) throws IOException {
-      //  System.out.print("seqNumber = " + seqNumber);
+      System.out.print("seqNumber = " + seqNumber);
         Add(data, seqNumber, dataLen);
         int temp, temp2, start = 0;
 
@@ -65,17 +65,17 @@ public class Window {
             ++start;
             seqTop = getIdx(seqTop);
             temp2 = (s[seqTop] % 65536);
-          //  System.out.println("temp = " + temp + ", temp2 = " + temp2);
+            System.out.println("temp = " + temp + ", temp2 = " + temp2);
             //} while (temp2 > temp && ((temp2 - temp) < 5000 && (temp2 - temp) > -5000) );
         } while ((temp2 > temp && (temp2 - temp) < 2040) || ((temp > temp2) && 65536 - (temp - temp2) < 2040));
 
-        //System.out.println(" | seqTop= " + seqTop);
+        System.out.println(" | seqTop= " + seqTop);
         if (end == true && endSeq == s[getIdx(seqTop + 1)]) {
             fos.close();
             return endSeq + endDatLen;
 
         } else {
-          //  System.out.println("ASD: "+i1 + "," + i2 + "," + i3 + "," + i4 + ",");
+            System.out.println("ASD: "+i1 + "," + i2 + "," + i3 + "," + i4 + ",");
             if (temp - temp2 > 30000) {
                 i1++;
                 return temp2 + 255;
@@ -99,7 +99,7 @@ public class Window {
             fos.write(w, seqTop * 255, 255);
         }
 
-      //  System.out.println("################## : " + s[seqTop]);
+       System.out.println("################## : " + s[seqTop]);
     }
 
     public void Print() {

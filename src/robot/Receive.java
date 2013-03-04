@@ -112,14 +112,14 @@ public class Receive {
                 seq%=65536;
             }
             s.setHead(idCon, (short) 0, (short) (seq1), flag);
-        } else if (seq - s.ack < 2040 )//i needed remember this packet
+        } else if (seq - s.ack < 2040 && seq - s.ack >= 0)//i needed remember this packet
         {
-//            System.out.println("tento packet si budu pamatovat");
-//            System.out.println("dataLen = " + dataLen);
+            System.out.println("tento packet si budu pamatovat");
+            System.out.println("dataLen = " + dataLen);
             w.Add(data, seq, dataLen);
         } else if((65536-(seq+s.ack)) < 2040 && (65536-(seq+s.ack)) > -2040 && s.ack > seq ){
-//            System.out.println("tento packet si budu pamatovat PRETEJKAM");
-//            System.out.println("dataLen = " + dataLen);
+            System.out.println("tento packet si budu pamatovat PRETEJKAM");
+            System.out.println("dataLen = " + dataLen);
             w.Add(data, seq, dataLen);
         }
 

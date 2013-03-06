@@ -94,6 +94,9 @@ public class Send {
                 sendF();
             }
         }
+//        if (flag == FIN) {
+//            r.receive();
+//        }
 
         r.w.fis.close();
         if (r.w.end == true) {
@@ -112,6 +115,9 @@ public class Send {
     public void sendF() throws IOException {
         if (flag == 0) {
             data = w.dataInPacket();
+        }
+        if(flag == FIN){
+            System.out.println("");
         }
         buildMessageF();
         packet = new DatagramPacket(message, message.length, address, port);
@@ -173,7 +179,9 @@ public class Send {
 
         if (flag == SYN) {
             daos.write(data, 0, data.length);
-        } else {
+        } //else if (flag == FIN) {}
+        
+        else {
             daos.write(data, 0, data.length);
         }
         message = baos.toByteArray();

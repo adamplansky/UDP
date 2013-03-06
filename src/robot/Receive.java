@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package robot;
 
 import java.io.*;
@@ -14,19 +10,15 @@ import java.net.*;
 public class Receive {
 
     int idCon;
-    
-    int seq,ack;
+    int seq, ack;
     byte flag;
     byte[] data;
     int dataLen;
-//    final byte SYN = 4;
-//    final byte FIN = 2;
-//    final byte RST = 1;
-    final byte SYN = 1;
+    //baryk
+    //final byte SYN = 1;
+    final byte SYN = 4;
     final byte FIN = 2;
     final byte RST = 1;
-    
-    
     final int DOWNLOAD = 0x01;
     final int UPLOAD = 0x02;
     byte[] message;
@@ -36,44 +28,39 @@ public class Receive {
     private DatagramPacket packet;
     private Send s;
     private int seq1;
-    private int lastSeq1;
-    private boolean overFlow = false;
-    private int printHelp = 0;
+    private int ack1;
     private static int counter = 0;
+    int lastPacket;
     Window w;
-    WindowTemp w1;
 
     public Receive(DatagramSocket socket, Send s) throws FileNotFoundException {
         this.socket = socket;
         data = new byte[255];
         message = new byte[255 + 9];
         this.s = s;
-        w = new Window();
-        w1 = new WindowTemp();
         seq1 = 0;
-        lastSeq1 = 0;
         counter = 0;
+        flag = -1;
+        lastPacket = 0;
+    }
+
+    public void setWindow(Window w) {
+        this.w = w;
     }
 
     public void receive() throws IOException {
-   
+
         try {
             packet = new DatagramPacket(message, message.length);
             socket.receive(packet);
-
             dataLen = packet.getLength() - 9; //buffer for data - head of packet
-  
-
             convertFromPacket();
-           print();
-     
+            print();
             if (s.idCon == idCon) {
                 //if it is correct packet
                 if (s.flag == 0 && flag == 0) {
                     //received packet is packet what i needed
                     doAction();
-
-
                 } else if (flag == FIN && dataLen > 0) {
                     //System.out.println("RST FLAG");
                 } else if (flag == FIN) {
@@ -81,10 +68,9 @@ public class Receive {
                     s.setHead(idCon, (short) 0, (short) (seq1), FIN);
                 }
             } else {
-
-                if (flag == SYN && s.flag == SYN && s.getIdCon() == 0 && dataLen == 1 && (data[0] == 1)) {
-                    //System.out.println("nastavuju ID");
+                if (flag == SYN && s.flag == SYN && s.getIdCon() == 0 && dataLen == 1 && ((data[0] == 1) || data[0] == 2)) {
                     setSendPacket();
+                    lastPacket = ack;
                 } else if (s.getFlag() == SYN && flag == 0) {
                     //System.out.println("packet zahazuju");
                 } else {
@@ -94,10 +80,10 @@ public class Receive {
             if (flag > 4 || s.flag == 3);//RST
 
         } catch (SocketTimeoutException e) {
-            System.out.println("TIMEOUT");
+            System.out.println("RCV TIMEOUT");
             counter++;
             if (counter >= 20) {
-                s.setHead(idCon, (short)seq, (short)ack, RST);
+                s.setHead(idCon, (short) seq, (short) ack, RST);
                 System.out.println("Posilam RST packet");
             } else {
                 s.send();
@@ -107,14 +93,59 @@ public class Receive {
         }
         counter = 0;
     }
+    //this method receive Firmware no bytes are allowed
+
+    public void receiveF() throws IOException {
+        try {
+            packet = new DatagramPacket(message, message.length);
+            socket.receive(packet);
+            dataLen = packet.getLength() - 9; //buffer for data - head of packet
+            convertFromPacket();
+            print();
+            if (s.idCon == idCon) {
+                if (s.flag == 0 && flag == 0) {
+                    //received some good packet
+                    doActionF();
+                } else if (flag == FIN) {
+                    System.out.println("ENDE ");
+                }
+            } else {
+                if (flag == SYN && s.flag == SYN && s.getIdCon() == 0 && dataLen == 1 && ((data[0] == 1) || data[0] == 2)) {
+                    setSendPacket();
+                } else if (s.getFlag() == SYN && flag == 0) {
+                    //System.out.println("packet zahazuju");
+                } else {
+                    //System.out.println("RST IDCON MISSING");
+                }
+            }
+
+        } catch (SocketTimeoutException e) {
+            System.out.println("TIMEOUT");
+            counter++;
+            if (counter >= 20) {
+                s.setHead(idCon, (short) seq, (short) ack, RST);
+                System.out.println("Posilam RST packet");
+            } else {
+                if (flag == 0) {
+                    s.sendAll();
+                    receiveF();
+                } else {
+                    s.sendF();
+                    receiveF();
+                }
+            }
+
+        }
+        counter = 0;
+    }
 
     void doAction() throws IOException {
-        
+
         if (seq == s.ack) {
             seq1 = w.next(data, seq, dataLen);
-            if(seq1 >= 65536){
-                seq1%=65536;
-                seq%=65536;
+            if (seq1 >= 65536) {
+                seq1 %= 65536;
+                seq %= 65536;
             }
             s.setHead(idCon, (short) 0, (short) (seq1), flag);
         } else if (seq - s.ack < 2040 && seq - s.ack >= 0)//i needed remember this packet
@@ -122,45 +153,46 @@ public class Receive {
             System.out.println("tento packet si budu pamatovat");
             System.out.println("dataLen = " + dataLen);
             w.Add(data, seq, dataLen);
-        } else if(seq < 2040 && (65536-(seq+s.ack)) < 2040 && (65536-(seq+s.ack)) > -2040 && s.ack > seq ){
+        } else if (seq < 2040 && (65536 - (seq + s.ack)) < 2040 && (65536 - (seq + s.ack)) > -2040 && s.ack > seq) {
             System.out.println("tento packet si budu pamatovat PRETEJKAM");
             System.out.println("dataLen = " + dataLen);
             w.Add(data, seq, dataLen);
         }
+    }
 
-//        } else if (seq < 0 && s.ack > 0) {
-//            if (seq + s.ack < 2000) {
-//                System.out.println("tento packet si budu pamatovat");
-//                System.out.println("dataLen = " + dataLen);
-//                w.Add(data, seq & 0xFFFF, dataLen);
-//            }
-//        }}
+    void doActionF() throws IOException {
+        if (ack == lastPacket) {
+            s.counterSamePacket++;
+        } else if (w.end == true && ack>=w.endSeq) {
+            s.setHead(idCon, (short) ack, (short) 0, FIN);
+        } else {
+            ack1 = w.addNextPackets(ack);
+            System.out.println("################");
+            System.out.println("ACK = " + ack1);
+            System.out.println("################");
+            s.setHead(idCon, (short) ack1, (short) 0, flag);
 
+        }
     }
 
     void convertFromPacket() throws IOException {
         bais = new ByteArrayInputStream(message);
         dais = new DataInputStream(bais);
         idCon = dais.readInt();
-
         seq = (dais.readShort() & 0xFFFF);
-
-        ack = dais.readShort();
+        ack = (dais.readShort() & 0xFFFF);
         flag = dais.readByte();
         dais.read(data);
         dais.close();
         bais.close();
-        if (overFlow == true) {
-            System.out.println("OVERFLOW!");
-        }
     }
 
     void setSendPacket() {
         if (s.getIdCon() == 0) {
-            if (getFlag() == SYN) {
+            if (flag == SYN) {
                 //prijmul sem packet ktery sem potreboval muzu zacit prijmat data
                 //nastav send na id con
-                s.setHead(idCon, (short)seq, (short)ack, (byte) 0);
+                s.setHead(idCon, (short) seq, (short) ack, (byte) 0);
             }
         }
     }
@@ -173,9 +205,6 @@ public class Receive {
             sb.append(String.format("%02X ", data[i]));
         }
         System.out.println(sb.toString());
-        if (printHelp == 50000) {
-            System.out.println("packet se mi nehodi do rady, navic uz sem ho jednou prijal ");
-        }
     }
 
     public int getIdCon() {
@@ -183,7 +212,7 @@ public class Receive {
     }
 
     public short getSeq() {
-        return (short)seq;
+        return (short) seq;
     }
 
     public int getAck() {

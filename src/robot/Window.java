@@ -4,6 +4,7 @@
  */
 package robot;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -19,25 +20,125 @@ public class Window {
     final int sw = 255;
     byte[] w;
     int[] s;
-    int[] s1;
     boolean end = false;
     int endDatLen = -10;
     int endSeq = 0;
+    private int mode;
     FileOutputStream fos;
+    FileInputStream fis;
     private int idx = -1;
+    private int cntSamePacket = 3;
     int i1 = 0, i2 = 0, i3 = 0, i4 = 0;
 
     public Window() throws FileNotFoundException {
         w = new byte[2040];
         s = new int[8];
-
-        s1 = new int[8];
+        this.mode = 1;
         fos = new FileOutputStream("foto.png");
     }
 
+    public Window(String firmwarePathTofile) throws FileNotFoundException, IOException {
+        w = new byte[2040];
+        s = new int[8];
+        this.mode = 2;
+        System.out.println("OK FIRMWAR");
+        fis = new FileInputStream(firmwarePathTofile);
+        initLoadFirmware();
+    }
+
+    public void initLoadFirmware() throws IOException {
+        int seqNumber = 0;
+        for (int i = 0; i < 8; i++) {
+            int idx = getIdx(seqNumber);
+            s[idx] = seqNumber;
+            fis.read(w, idx * 255, 255);
+            seqNumber += 255;
+        }
+        seqTop = 0;
+    }
+
+    public byte[] dataInPacket() {
+        byte[] data = new byte[255];
+        if (end == true && seqTop == endSeq) {
+            System.arraycopy(w, seqTop, data, 0, endDatLen);
+        } else {
+            System.arraycopy(w, seqTop, data, 0, 255);
+        }
+        Print();
+        return data;
+    }
+
+    public byte[] dataInPacketAtIndex(int idx) {
+        byte[] data = new byte[255];
+        if (end == true && idx * 255 == endSeq) {
+            System.arraycopy(w, idx * 255, data, 0, endDatLen);
+        } else {
+            System.arraycopy(w, idx * 255, data, 0, 255);
+        }
+        Print();
+        return data;
+    }
+
+    public int addNextPackets(int ack) throws IOException {
+        if (ack != s[seqTop]) {
+            int ret = 0;
+            if (end == true) {
+                System.out.println("");
+            }
+            if (end == false) {
+                while (s[seqTop] != ack) {
+                    if (ret == -1) {
+                        seqTop = ++seqTop % 8;
+                        continue;
+                    }
+                    ret = fis.read(w, seqTop * 255, 255);
+                    if (ret != 255) {
+                        System.out.print("NACITAM POSLEDNI BYTE");
+                        Print();
+                        if (ret == -1) {
+                            s[seqTop] = (s[seqTop] + 2040) % 65536;
+                            endSeq = s[seqTop];
+                            end = true;
+                            if (endDatLen <= 0) {
+                                endDatLen = 255;
+                            }
+                        } else {
+                            s[seqTop] = (s[seqTop] + 2040) % 65536;
+                            endDatLen = ret;
+                            endSeq = s[seqTop] + ret;
+                            end = true;
+
+                        }
+                        System.out.println(endSeq);
+                    } else {
+                        s[seqTop] = (s[seqTop] + 2040) % 65536;
+                    }
+                    seqTop = getIdx(seqTop - 1);
+                }
+            }
+        } else {
+            while (s[seqTop] != ack) {
+                seqTop = getIdx(seqTop - 1);
+            }
+        }
+        Print();
+        return s[seqTop];
+    }
+
+    public int getSeqOnIndex(int idx) {
+        return s[idx];
+    }
+
+    boolean send8Packets() {
+        if (cntSamePacket == 3) {
+            return true;
+        }
+        return false;
+    }
     //return packet I need
+
     public void Add(byte[] data, int seqNumber, int dataLen) throws IOException {
-      
+
         int idx = getIdx(seqNumber);
         if (s[idx] == seqNumber && seqNumber != 0) {
             return;
@@ -54,7 +155,7 @@ public class Window {
     }
 
     public int next(byte[] data, int seqNumber, int dataLen) throws IOException {
-      System.out.print("seqNumber = " + seqNumber);
+        System.out.print("seqNumber = " + seqNumber);
         Add(data, seqNumber, dataLen);
         int temp, temp2, start = 0;
 
@@ -66,7 +167,6 @@ public class Window {
             seqTop = getIdx(seqTop);
             temp2 = (s[seqTop] % 65536);
             System.out.println("temp = " + temp + ", temp2 = " + temp2);
-            //} while (temp2 > temp && ((temp2 - temp) < 5000 && (temp2 - temp) > -5000) );
         } while ((temp2 > temp && (temp2 - temp) < 2040) || ((temp > temp2) && 65536 - (temp - temp2) < 2040));
 
         System.out.println(" | seqTop= " + seqTop);
@@ -75,7 +175,7 @@ public class Window {
             return endSeq + endDatLen;
 
         } else {
-            System.out.println("ASD: "+i1 + "," + i2 + "," + i3 + "," + i4 + ",");
+            System.out.println("ASD: " + i1 + "," + i2 + "," + i3 + "," + i4 + ",");
             if (temp - temp2 > 30000) {
                 i1++;
                 return temp2 + 255;
@@ -98,8 +198,7 @@ public class Window {
         } else {
             fos.write(w, seqTop * 255, 255);
         }
-
-       System.out.println("################## : " + s[seqTop]);
+        System.out.println("################## : " + s[seqTop]);
     }
 
     public void Print() {
@@ -110,6 +209,7 @@ public class Window {
         System.out.println(" ]");
     }
 
+    //get idx in ranged 0-7 for ack/seq
     public int getIdx(int number) {
         if (number < 1) {
             int a = (number) % 8;

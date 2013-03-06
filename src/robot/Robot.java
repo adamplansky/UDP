@@ -20,8 +20,9 @@ public class Robot {
 
         try {
             Client c = new Client("localhost", 4000);
+            //Client c = new Client("baryk.fit.cvut.cz", 4000);
             //c.receiveScreenshot();
-            c.sendFirmware("olol.bin");
+            c.sendFirmware("firmware-karel-1.6.0.bin");
         } catch (Exception e) {
             System.out.println(e);
         }

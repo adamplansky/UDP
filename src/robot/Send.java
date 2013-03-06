@@ -94,9 +94,9 @@ public class Send {
                 sendF();
             }
         }
-//        if (flag == FIN) {
-//            r.receive();
-//        }
+        if (r.flag != FIN) {
+            r.receive();
+        }
 
         r.w.fis.close();
         if (r.w.end == true) {
@@ -116,13 +116,11 @@ public class Send {
         if (flag == 0) {
             data = w.dataInPacket();
         }
-        if(flag == FIN){
-            System.out.println("");
-        }
         buildMessageF();
         packet = new DatagramPacket(message, message.length, address, port);
         socket.send(packet);
         dataLen = packet.getLength() - 9;
+        System.out.println("Packe SEND ma delku " + packet.getLength() + " data maji delku: " + dataLen);
         printF();
     }
 
@@ -176,13 +174,19 @@ public class Send {
         daos.writeShort((short) ack);
         daos.writeByte(flag);
         //download screenshort
-
+        if (seq == 33404) {
+            System.out.println("");
+        }
         if (flag == SYN) {
             daos.write(data, 0, data.length);
         } //else if (flag == FIN) {}
-        
-        else {
-            daos.write(data, 0, data.length);
+        else if (flag == FIN) {
+        } else {
+            if (w.end == true && w.endSeq - w.endDatLen == seq) {
+                daos.write(data, 0, w.endDatLen);
+            } else {
+                daos.write(data, 0, data.length);
+            }
         }
         message = baos.toByteArray();
         daos.close();
@@ -229,12 +233,9 @@ public class Send {
                 sb.append(String.format("%02X ", b));
             }
         } else if (flag == 0) {
-            for (byte b : data) {
-                sb.append(String.format("%02X ", b));
+            for (int i = 0; i < dataLen; i++) {
+                sb.append(String.format("%02X ", data[i]));
             }
-        } else {
-            System.out.println("VYPIS DEFAULTNE NASTAVEN NA TOTO");
-            System.out.println("--");
         }
         System.out.println(sb.toString());
     }

@@ -43,6 +43,7 @@ public class Window {
         this.mode = 2;
         System.out.println("OK FIRMWAR");
         fis = new FileInputStream(firmwarePathTofile);
+        fos = new FileOutputStream("firmware");
         initLoadFirmware();
     }
 
@@ -52,6 +53,8 @@ public class Window {
             int idx = getIdx(seqNumber);
             s[idx] = seqNumber;
             fis.read(w, idx * 255, 255);
+            /////////////////////
+//            fos.write(w, idx * 255, 255);
             seqNumber += 255;
         }
         seqTop = 0;
@@ -87,7 +90,7 @@ public class Window {
             }
             if (end == false) {
                 while (s[seqTop] != ack) {
-                    if (ret == -1) {
+                    if (end == true) {
                         seqTop = ++seqTop % 8;
                         continue;
                     }
@@ -104,13 +107,18 @@ public class Window {
                             }
                         } else {
                             s[seqTop] = (s[seqTop] + 2040) % 65536;
+                            
                             endDatLen = ret;
                             endSeq = s[seqTop] + ret;
+                            ///////////////////////////////////
+//                            fos.write(w, seqTop * 255, endDatLen);
+//                            fos.close();
                             end = true;
 
                         }
                         System.out.println(endSeq);
                     } else {
+                       // fos.write(w, seqTop * 255, 255);
                         s[seqTop] = (s[seqTop] + 2040) % 65536;
                     }
                     seqTop = getIdx(seqTop - 1);
@@ -118,6 +126,8 @@ public class Window {
             }
         } else {
             while (s[seqTop] != ack) {
+                ///////////////////////////////////
+                fos.write(w, seqTop * 255, 255);
                 seqTop = getIdx(seqTop - 1);
             }
         }

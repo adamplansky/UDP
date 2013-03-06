@@ -163,7 +163,9 @@ public class Receive {
     void doActionF() throws IOException {
         if (ack == lastPacket) {
             s.counterSamePacket++;
-        } else if (w.end == true && ack>w.endSeq) {
+        } else if (w.end == true && ack>=w.endSeq) {
+            System.out.println("NASTAVUJU FIN");
+            System.out.println("ACK = " + ack + ", " + w.endSeq);
             s.setHead(idCon, (short) ack, (short) 0, FIN);
         } else {
             ack1 = w.addNextPackets(ack);

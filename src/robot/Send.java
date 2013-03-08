@@ -17,7 +17,7 @@ public class Send {
     byte[] data;
     int dataLen;
     //baryk
-    final byte SYN = 4;
+    final byte SYN = 1;
     final byte FIN = 2;
     final byte RST = 1;
     private byte mode = 0;
@@ -87,12 +87,12 @@ public class Send {
         }
         while (flag == 0) {
             r.receiveF();
-            if (counterSamePacket == 3) {
-                sendAll();
-                counterSamePacket = 0;
-            } else {
+//            if (counterSamePacket == 3) {
+//                sendAll();
+//                counterSamePacket = 0;
+//            } else {
                 sendF();
-            }
+            //}
         }
         if (r.flag != FIN) {
             r.receive();
@@ -120,7 +120,7 @@ public class Send {
         packet = new DatagramPacket(message, message.length, address, port);
         socket.send(packet);
         dataLen = packet.getLength() - 9;
-        System.out.println("Packe SEND ma delku " + packet.getLength() + " data maji delku: " + dataLen);
+      //  System.out.println("Packe SEND ma delku " + packet.getLength() + " data maji delku: " + dataLen);
         printF();
     }
 
@@ -174,9 +174,7 @@ public class Send {
         daos.writeShort((short) ack);
         daos.writeByte(flag);
         //download screenshort
-        if (seq == 33404) {
-            System.out.println("");
-        }
+ 
         if (flag == SYN) {
             daos.write(data, 0, data.length);
         } //else if (flag == FIN) {}

@@ -63,11 +63,11 @@ public class Window {
     public byte[] dataInPacket() {
         byte[] data = new byte[255];
         if (end == true && seqTop == endSeq) {
-            System.arraycopy(w, seqTop, data, 0, endDatLen);
+            System.arraycopy(w, seqTop*255, data, 0, endDatLen);
         } else {
-            System.arraycopy(w, seqTop, data, 0, 255);
+            System.arraycopy(w, seqTop*255, data, 0, 255);
         }
-        Print();
+        //Print();
         return data;
     }
 
@@ -78,16 +78,15 @@ public class Window {
         } else {
             System.arraycopy(w, idx * 255, data, 0, 255);
         }
-        Print();
+        //Print();
         return data;
     }
 
     public int addNextPackets(int ack) throws IOException {
+       
+        Print();
         if (ack != s[seqTop]) {
             int ret = 0;
-            if (end == true) {
-                System.out.println("");
-            }
             if (end == false) {
                 while (s[seqTop] != ack) {
                     if (end == true) {
@@ -96,8 +95,8 @@ public class Window {
                     }
                     ret = fis.read(w, seqTop * 255, 255);
                     if (ret != 255) {
-                        System.out.print("NACITAM POSLEDNI BYTE");
-                        Print();
+                        //System.out.print("NACITAM POSLEDNI BYTE");
+                        //Print();
                         if (ret == -1) {
                             s[seqTop] = (s[seqTop] + 2040) % 65536;
                             endSeq = s[seqTop];
@@ -106,6 +105,7 @@ public class Window {
                                 endDatLen = 255;
                             }
                         } else {
+                            //System.out.println(s[seqTop]);
                             s[seqTop] = (s[seqTop] + 2040) % 65536;
                             
                             endDatLen = ret;
@@ -114,11 +114,16 @@ public class Window {
 //                            fos.write(w, seqTop * 255, endDatLen);
 //                            fos.close();
                             end = true;
-
+                            int mm = seqTop;
+                            for(; ; ){
+                                System.out.println(s[mm++]);
+                                if(mm==8)break;
+                            }
                         }
-                        System.out.println(endSeq);
+                       // System.out.println(endSeq);
                     } else {
                        // fos.write(w, seqTop * 255, 255);
+                        System.out.println(s[seqTop]);
                         s[seqTop] = (s[seqTop] + 2040) % 65536;
                     }
                     seqTop = getIdx(seqTop - 1);
@@ -126,6 +131,7 @@ public class Window {
             }
         } else {
             while (s[seqTop] != ack) {
+                System.out.println(s[seqTop]);
                 ///////////////////////////////////
                 fos.write(w, seqTop * 255, 255);
                 seqTop = getIdx(seqTop - 1);

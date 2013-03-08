@@ -16,7 +16,7 @@ public class Receive {
     int dataLen;
     //baryk
     //final byte SYN = 1;
-    final byte SYN = 4;
+    final byte SYN = 1;
     final byte FIN = 2;
     final byte RST = 1;
     final int DOWNLOAD = 0x01;
@@ -120,7 +120,7 @@ public class Receive {
             }
 
         } catch (SocketTimeoutException e) {
-            System.out.println("TIMEOUT");
+            //System.out.println("TIMEOUT");
             counter++;
             if (counter >= 20) {
                 s.setHead(idCon, (short) seq, (short) ack, RST);
@@ -165,7 +165,7 @@ public class Receive {
             s.counterSamePacket++;
         } else if (w.end == true && ack>=w.endSeq) {
             System.out.println("NASTAVUJU FIN");
-            System.out.println("ACK = " + ack + ", " + w.endSeq);
+            System.out.println("ACK = " + ack + ", endSeq = " + w.endSeq);
             s.setHead(idCon, (short) ack, (short) 0, FIN);
         } else {
             ack1 = w.addNextPackets(ack);

@@ -17,10 +17,9 @@ public class Robot {
 
     public static void main(String[] args) {
 
-
         try {
-            Client c = new Client("localhost", 4000);
-            //Client c = new Client("baryk.fit.cvut.cz", 4000);
+            //Client c = new Client("localhost", 4000);
+            Client c = new Client("baryk.fit.cvut.cz", 4000);
             //c.receiveScreenshot();
             c.sendFirmware("firmware-karel-1.6.0.bin");
         } catch (Exception e) {
@@ -55,4 +54,3 @@ class Client {
         System.out.println("SCREENSHOT");
     }
 }
-

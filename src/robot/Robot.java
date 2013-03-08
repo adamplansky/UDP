@@ -16,16 +16,23 @@ import java.io.*;
 public class Robot {
 
     public static void main(String[] args) {
-
-        try {
-            //Client c = new Client("localhost", 4000);
-            Client c = new Client("baryk.fit.cvut.cz", 4000);
-            //c.receiveScreenshot();
-            c.sendFirmware("firmware-karel-1.6.0.bin");
-        } catch (Exception e) {
-            System.out.println(e);
+        if (args.length == 1) {
+               try {
+                Client c = new Client(args[0], 4000);
+                c.receiveScreenshot();
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+        } else if (args.length == 2) {
+            try {
+                Client c = new Client(args[0], 4000);
+                c.sendFirmware(args[1]);
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+        } else {
+            System.out.println("please insert ip adress as a first parametr and if you want to upload firmware please insert firmware as a second parameter");
         }
-        System.out.println(255%8);
 
     }
 }

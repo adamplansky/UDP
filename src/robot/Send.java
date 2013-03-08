@@ -91,15 +91,21 @@ public class Send {
 //                sendAll();
 //                counterSamePacket = 0;
 //            } else {
-                sendF();
+            sendF();
             //}
         }
-        if (r.flag != FIN) {
-            r.receive();
-        }
+        if (r.flag == 0) {
+            while (r.flag != FIN) {
 
+                r.receiveF();
+                sendF();
+                if (flag != FIN) {
+                    break;
+                }
+            }
+        }
         r.w.fis.close();
-        if (r.w.end == true) {
+        if (r.w.end == true && r.flag == FIN && flag == FIN) {
             System.out.println("Prenaseni probehlo uspesne.");
         }
     }
@@ -120,7 +126,7 @@ public class Send {
         packet = new DatagramPacket(message, message.length, address, port);
         socket.send(packet);
         dataLen = packet.getLength() - 9;
-      //  System.out.println("Packe SEND ma delku " + packet.getLength() + " data maji delku: " + dataLen);
+        //  System.out.println("Packe SEND ma delku " + packet.getLength() + " data maji delku: " + dataLen);
         printF();
     }
 
@@ -174,7 +180,7 @@ public class Send {
         daos.writeShort((short) ack);
         daos.writeByte(flag);
         //download screenshort
- 
+
         if (flag == SYN) {
             daos.write(data, 0, data.length);
         } //else if (flag == FIN) {}
